@@ -1,6 +1,49 @@
 from tkinter import *
+from tkinter import font
 
-# Rječnik knjiga i autora
+
+
+prozor = Tk()
+prozor.title("Biblioteka")
+prozor.geometry("600x550")
+
+
+
+#fontovi
+naslov_font = font.Font(family="Helvetica", size=12, weight="bold")
+tekst_font = font.Font(family="Helvetica", size=10)
+
+#gornji frame
+gornji_frame = Frame(prozor, bg="#ffffff", bd=2)
+gornji_frame.place(relx=0.5, rely=0.05, anchor="n")
+
+Label(gornji_frame, text="Pretraži, pozajmi, vrati ili dodaj knjigu:", font=naslov_font, bg="#ffffff").grid(row=0, column=0, columnspan=2, pady=5)
+
+unos = Entry(gornji_frame, width=45)
+unos.grid(row=1, column=0, padx=10, pady=5)
+
+#dugmad
+dugmad_frame = Frame(gornji_frame, bg="#ffffff")
+dugmad_frame.grid(row=2, column=0, columnspan=2, pady=5)
+
+Button(dugmad_frame, text="Pretraži", width=15, command=lambda: pretrazi_knjigu()).grid(row=0, column=0, padx=5)
+Button(dugmad_frame, text="Prikaži sve", width=15, command=lambda: prikazi_knjige()).grid(row=0, column=1, padx=5)
+Button(dugmad_frame, text="Pozajmi", width=15, command=lambda: pozajmi_knjigu()).grid(row=1, column=0, padx=5, pady=3)
+Button(dugmad_frame, text="Vrati", width=15, command=lambda: vrati_knjigu()).grid(row=1, column=1, padx=5, pady=3)
+
+#donji frame za prikaz teksta i scrollbar
+donji_frame = Frame(prozor, bg="#ffffff")
+donji_frame.place(relx=0.5, rely=0.35, anchor="n")
+
+scrollbar = Scrollbar(donji_frame)
+scrollbar.pack(side=RIGHT, fill=Y)
+
+tekst = Text(donji_frame, wrap=WORD, width=70, height=20, yscrollcommand=scrollbar.set, font=tekst_font)
+tekst.pack()
+
+scrollbar.config(command=tekst.yview)
+
+#recnik knjiga i autora
 knjige_autori = {
     "Ana Karenjina": "Lav Tolstoj",
     "Zločin i kazna": "Fjodor Dostojevski",
@@ -19,17 +62,17 @@ knjige_autori = {
     "To": "Stiven King"
 }
 
-# Rječnik statusa knjiga: True = dostupna, False = pozajmljena
+#recnik statusa knjiga: True = dostupna, False = pozajmljena
 status_knjige = {naslov: True for naslov in knjige_autori}
 
-# Prikaz svih knjiga sa statusom
+#prikaz svih knjiga sa statusom
 def prikazi_knjige():
     tekst.delete(1.0, END)
     for naslov, autor in knjige_autori.items():
         status = "Dostupna" if status_knjige[naslov] else "Pozajmljena"
         tekst.insert(END, f"{naslov} - {autor} ({status})\n")
 
-# Pretraga knjiga
+#pretraga knjiga
 def pretrazi_knjigu():
     upit = unos.get().lower()
     tekst.delete(1.0, END)
@@ -38,7 +81,7 @@ def pretrazi_knjigu():
             status = "Dostupna" if status_knjige[naslov] else "Pozajmljena"
             tekst.insert(END, f"{naslov} - {autor} ({status})\n")
 
-# Pozajmljivanje knjige
+#pozajmljivanje knjige
 def pozajmi_knjigu():
     naslov = unos.get()
     if naslov in knjige_autori:
@@ -50,7 +93,7 @@ def pozajmi_knjigu():
     else:
         tekst.insert(END, f"Knjiga '{naslov}' ne postoji u sistemu.\n")
 
-# Vraćanje knjige
+#vracanje knjige
 def vrati_knjigu():
     naslov = unos.get()
     if naslov in knjige_autori:
@@ -61,22 +104,5 @@ def vrati_knjigu():
             tekst.insert(END, f"Knjiga '{naslov}' je već dostupna.\n")
     else:
         tekst.insert(END, f"Knjiga '{naslov}' ne postoji u sistemu.\n")
-
-# GUI prozor
-prozor = Tk()
-prozor.title("Biblioteka")
-prozor.geometry("550x500")
-
-Label(prozor, text="Pretraži, pozajmi ili vrati knjigu:").pack()
-unos = Entry(prozor, width=50)
-unos.pack(pady=5)
-
-Button(prozor, text="Pretraži", command=pretrazi_knjigu).pack(pady=2)
-Button(prozor, text="Prikaži sve knjige", command=prikazi_knjige).pack(pady=2)
-Button(prozor, text="Pozajmi knjigu", command=pozajmi_knjigu).pack(pady=2)
-Button(prozor, text="Vrati knjigu", command=vrati_knjigu).pack(pady=2)
-
-tekst = Text(prozor, wrap=WORD, width=65, height=20)
-tekst.pack(pady=10)
 
 prozor.mainloop()

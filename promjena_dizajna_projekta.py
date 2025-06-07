@@ -1,48 +1,14 @@
-from tkinter import *
-from tkinter import ttk
-from tkinter import font
+import customtkinter as ctk
 
-# Glavni prozor
-prozor = Tk()
+# Inicijalizacija prozora
+ctk.set_appearance_mode("light")  # ili "dark"
+ctk.set_default_color_theme("blue")
+
+prozor = ctk.CTk()
 prozor.title("Biblioteka")
-prozor.geometry("650x600")
-prozor.configure(bg="#f2f2f2")
+prozor.geometry("700x600")
 
-# Fontovi
-naslov_font = font.Font(family="Helvetica", size=14, weight="bold")
-tekst_font = font.Font(family="Helvetica", size=10)
-
-# Gornji deo – unos i naslov
-frame_top = Frame(prozor, bg="#f2f2f2")
-frame_top.pack(pady=20)
-
-Label(frame_top, text="Pretraži, pozajmi, vrati ili dodaj knjigu:", font=naslov_font, bg="#f2f2f2").pack()
-
-unos = ttk.Entry(frame_top, width=50)
-unos.pack(pady=10)
-
-# Dugmad
-frame_dugmad = Frame(prozor, bg="#f2f2f2")
-frame_dugmad.pack(pady=10)
-
-ttk.Button(frame_dugmad, text="Pretraži", width=18, command=lambda: pretrazi_knjigu()).grid(row=0, column=0, padx=5, pady=5)
-ttk.Button(frame_dugmad, text="Prikaži sve", width=18, command=lambda: prikazi_knjige()).grid(row=0, column=1, padx=5, pady=5)
-ttk.Button(frame_dugmad, text="Pozajmi", width=18, command=lambda: pozajmi_knjigu()).grid(row=1, column=0, padx=5, pady=5)
-ttk.Button(frame_dugmad, text="Vrati", width=18, command=lambda: vrati_knjigu()).grid(row=1, column=1, padx=5, pady=5)
-
-# Donji deo – tekst i skrol
-frame_tekst = Frame(prozor, bg="#f2f2f2")
-frame_tekst.pack(pady=20, fill=BOTH, expand=True)
-
-scrollbar = Scrollbar(frame_tekst)
-scrollbar.pack(side=RIGHT, fill=Y)
-
-tekst = Text(frame_tekst, wrap=WORD, width=75, height=20, yscrollcommand=scrollbar.set, font=tekst_font, bg="#ffffff", bd=1, relief="solid")
-tekst.pack(padx=10, pady=10)
-
-scrollbar.config(command=tekst.yview)
-
-# Podaci
+# Knjige i status
 knjige_autori = {
     "Ana Karenjina": "Lav Tolstoj",
     "Zločin i kazna": "Fjodor Dostojevski",
@@ -60,44 +26,65 @@ knjige_autori = {
     "Nečista krv": "Borisav Stanković",
     "To": "Stiven King"
 }
-
 status_knjige = {naslov: True for naslov in knjige_autori}
 
 # Funkcije
 def prikazi_knjige():
-    tekst.delete(1.0, END)
+    tekstbox.delete("0.0", "end")
     for naslov, autor in knjige_autori.items():
         status = "Dostupna" if status_knjige[naslov] else "Pozajmljena"
-        tekst.insert(END, f"{naslov} - {autor} ({status})\n")
+        tekstbox.insert("end", f"{naslov} - {autor} ({status})\n")
 
 def pretrazi_knjigu():
     upit = unos.get().lower()
-    tekst.delete(1.0, END)
+    tekstbox.delete("0.0", "end")
     for naslov, autor in knjige_autori.items():
         if upit in naslov.lower():
             status = "Dostupna" if status_knjige[naslov] else "Pozajmljena"
-            tekst.insert(END, f"{naslov} - {autor} ({status})\n")
+            tekstbox.insert("end", f"{naslov} - {autor} ({status})\n")
 
 def pozajmi_knjigu():
     naslov = unos.get()
     if naslov in knjige_autori:
         if status_knjige[naslov]:
             status_knjige[naslov] = False
-            tekst.insert(END, f"Knjiga '{naslov}' je uspješno pozajmljena.\n")
+            tekstbox.insert("end", f"✅ Knjiga '{naslov}' je uspješno pozajmljena.\n")
         else:
-            tekst.insert(END, f"Knjiga '{naslov}' je već pozajmljena.\n")
+            tekstbox.insert("end", f"❌ Knjiga '{naslov}' je već pozajmljena.\n")
     else:
-        tekst.insert(END, f"Knjiga '{naslov}' ne postoji u sistemu.\n")
+        tekstbox.insert("end", f"⚠️ Knjiga '{naslov}' ne postoji u sistemu.\n")
 
 def vrati_knjigu():
     naslov = unos.get()
     if naslov in knjige_autori:
         if not status_knjige[naslov]:
             status_knjige[naslov] = True
-            tekst.insert(END, f"Knjiga '{naslov}' je uspješno vraćena.\n")
+            tekstbox.insert("end", f"✅ Knjiga '{naslov}' je uspješno vraćena.\n")
         else:
-            tekst.insert(END, f"Knjiga '{naslov}' je već dostupna.\n")
+            tekstbox.insert("end", f"ℹ️ Knjiga '{naslov}' je već dostupna.\n")
     else:
-        tekst.insert(END, f"Knjiga '{naslov}' ne postoji u sistemu.\n")
+        tekstbox.insert("end", f"⚠️ Knjiga '{naslov}' ne postoji u sistemu.\n")
 
+# Naslov
+naslov_label = ctk.CTkLabel(prozor, text="📚 Pretraži, pozajmi, vrati ili dodaj knjigu", font=ctk.CTkFont(size=18, weight="bold"))
+naslov_label.pack(pady=15)
+
+# Unos
+unos = ctk.CTkEntry(prozor, placeholder_text="Unesite naziv knjige", width=400)
+unos.pack(pady=10)
+
+# Dugmad
+frame_dugmad = ctk.CTkFrame(prozor)
+frame_dugmad.pack(pady=10)
+
+ctk.CTkButton(frame_dugmad, text="Pretraži", command=pretrazi_knjigu, width=150).grid(row=0, column=0, padx=10, pady=5)
+ctk.CTkButton(frame_dugmad, text="Prikaži sve", command=prikazi_knjige, width=150).grid(row=0, column=1, padx=10, pady=5)
+ctk.CTkButton(frame_dugmad, text="Pozajmi", command=pozajmi_knjigu, width=150).grid(row=1, column=0, padx=10, pady=5)
+ctk.CTkButton(frame_dugmad, text="Vrati", command=vrati_knjigu, width=150).grid(row=1, column=1, padx=10, pady=5)
+
+# Tekst prikaz
+tekstbox = ctk.CTkTextbox(prozor, width=650, height=300)
+tekstbox.pack(pady=15)
+
+# Pokretanje aplikacije
 prozor.mainloop()

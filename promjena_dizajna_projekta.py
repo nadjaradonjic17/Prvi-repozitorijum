@@ -1,6 +1,6 @@
 import customtkinter as ctk
 
-# Inicijalizacija prozora
+
 ctk.set_appearance_mode("light")  # ili "dark"
 ctk.set_default_color_theme("blue")
 
@@ -8,7 +8,7 @@ prozor = ctk.CTk()
 prozor.title("Biblioteka")
 prozor.geometry("700x600")
 
-# Knjige i status
+
 knjige_autori = {
     "Ana Karenjina": "Lav Tolstoj",
     "Zločin i kazna": "Fjodor Dostojevski",
@@ -28,7 +28,7 @@ knjige_autori = {
 }
 status_knjige = {naslov: True for naslov in knjige_autori}
 
-# Funkcije
+
 def prikazi_knjige():
     tekstbox.delete("0.0", "end")
     for naslov, autor in knjige_autori.items():
@@ -65,15 +65,15 @@ def vrati_knjigu():
     else:
         tekstbox.insert("end", f"⚠️ Knjiga '{naslov}' ne postoji u sistemu.\n")
 
-# Naslov
+
 naslov_label = ctk.CTkLabel(prozor, text="📚 Pretraži, pozajmi, vrati ili dodaj knjigu", font=ctk.CTkFont(size=18, weight="bold"))
 naslov_label.pack(pady=15)
 
-# Unos
+
 unos = ctk.CTkEntry(prozor, placeholder_text="Unesite naziv knjige", width=400)
 unos.pack(pady=10)
 
-# Dugmad
+
 frame_dugmad = ctk.CTkFrame(prozor)
 frame_dugmad.pack(pady=10)
 
@@ -82,9 +82,9 @@ ctk.CTkButton(frame_dugmad, text="Prikaži sve", command=prikazi_knjige, width=1
 ctk.CTkButton(frame_dugmad, text="Pozajmi", command=pozajmi_knjigu, width=150).grid(row=1, column=0, padx=10, pady=5)
 ctk.CTkButton(frame_dugmad, text="Vrati", command=vrati_knjigu, width=150).grid(row=1, column=1, padx=10, pady=5)
 
-# Tekst prikaz
+
 tekstbox = ctk.CTkTextbox(prozor, width=650, height=300)
 tekstbox.pack(pady=15)
 
-# Pokretanje aplikacije
+
 prozor.mainloop()

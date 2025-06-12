@@ -1,49 +1,24 @@
-from tkinter import *
-from tkinter import font
+import customtkinter as ctk
+from tkinter import messagebox
+import json
+import os
 
+ctk.set_appearance_mode("light")
+ctk.set_default_color_theme("blue")
 
+app = ctk.CTk()
+app.geometry("1000x600")
+app.title("📚 Biblioteka")
 
-prozor = Tk()
-prozor.title("Biblioteka")
-prozor.geometry("600x550")
+# ------------------- PODACI -------------------
+korisnici_fajl = "korisnici.json"
 
+if os.path.exists(korisnici_fajl):
+    with open(korisnici_fajl, "r") as f:
+        korisnici = json.load(f)
+else:
+    korisnici = {}
 
-
-#fontovi
-naslov_font = font.Font(family="Helvetica", size=12, weight="bold")
-tekst_font = font.Font(family="Helvetica", size=10)
-
-#gornji frame
-gornji_frame = Frame(prozor, bg="#ffffff", bd=2)
-gornji_frame.place(relx=0.5, rely=0.05, anchor="n")
-
-Label(gornji_frame, text="Pretraži, pozajmi, vrati ili dodaj knjigu:", font=naslov_font, bg="#ffffff").grid(row=0, column=0, columnspan=2, pady=5)
-
-unos = Entry(gornji_frame, width=45)
-unos.grid(row=1, column=0, padx=10, pady=5)
-
-#dugmad
-dugmad_frame = Frame(gornji_frame, bg="#ffffff")
-dugmad_frame.grid(row=2, column=0, columnspan=2, pady=5)
-
-Button(dugmad_frame, text="Pretraži", width=15, command=lambda: pretrazi_knjigu()).grid(row=0, column=0, padx=5)
-Button(dugmad_frame, text="Prikaži sve", width=15, command=lambda: prikazi_knjige()).grid(row=0, column=1, padx=5)
-Button(dugmad_frame, text="Pozajmi", width=15, command=lambda: pozajmi_knjigu()).grid(row=1, column=0, padx=5, pady=3)
-Button(dugmad_frame, text="Vrati", width=15, command=lambda: vrati_knjigu()).grid(row=1, column=1, padx=5, pady=3)
-
-#donji frame za prikaz teksta i scrollbar
-donji_frame = Frame(prozor, bg="#ffffff")
-donji_frame.place(relx=0.5, rely=0.35, anchor="n")
-
-scrollbar = Scrollbar(donji_frame)
-scrollbar.pack(side=RIGHT, fill=Y)
-
-tekst = Text(donji_frame, wrap=WORD, width=70, height=20, yscrollcommand=scrollbar.set, font=tekst_font)
-tekst.pack()
-
-scrollbar.config(command=tekst.yview)
-
-#recnik knjiga i autora
 knjige_autori = {
     "Ana Karenjina": "Lav Tolstoj",
     "Zločin i kazna": "Fjodor Dostojevski",
@@ -59,50 +34,212 @@ knjige_autori = {
     "Derviš i smrt": "Meša Selimović",
     "Tvrđava": "Meša Selimović",
     "Nečista krv": "Borisav Stanković",
-    "To": "Stiven King"
+    "To": "Stiven King",
+    "Mali čovek, veliki grad": "Alfred Döblin",
+    "Ponos i predrasude": "Džejn Austen",
+    "Lovac u žitu": "Dž. D. Selindžer",
+    "Na zapadu ništa novo": "Erich Maria Remarque",
+    "Veliki Getsbi": "F. Skot Ficdžerald",
+    "Zov divljine": "Džek London",
+    "Mrtve duše": "Nikolaj Gogolj",
+    "Braća Karamazovi": "Fjodor Dostojevski",
+    "Božanstvena komedija": "Dante Aligijeri",
+    "Čarobnjak iz Oza": "L. Frank Baum"
 }
-
-#recnik statusa knjiga: True = dostupna, False = pozajmljena
 status_knjige = {naslov: True for naslov in knjige_autori}
 
-#prikaz svih knjiga sa statusom
-def prikazi_knjige():
-    tekst.delete(1.0, END)
-    for naslov, autor in knjige_autori.items():
-        status = "Dostupna" if status_knjige[naslov] else "Pozajmljena"
-        tekst.insert(END, f"{naslov} - {autor} ({status})\n")
+ulogovan_korisnik = None
 
-#pretraga knjiga
+# ------------------- FUNKCIJE -------------------
+def prikazi_knjige(knjige=None):
+    for widget in knjige_list_frame.winfo_children():
+        widget.destroy()
+
+    prikaz = knjige or knjige_autori
+    for naslov, autor in prikaz.items():
+        status = "✅" if status_knjige[naslov] else "❌"
+        label = ctk.CTkLabel(knjige_list_frame, text=f"{naslov} - {autor} ({status})", anchor="w")
+        label.pack(fill="x", padx=10, pady=2)
+
+def login():
+    global ulogovan_korisnik
+    username = username_entry.get()
+    password = password_entry.get()
+
+    if username in korisnici and korisnici[username] == password:
+        ulogovan_korisnik = username
+        messagebox.showinfo("Uspeh", "Uspešno prijavljeni!")
+        prikazi_knjige()
+        username_entry.delete(0, 'end')
+        password_entry.delete(0, 'end')
+    else:
+        messagebox.showerror("Greška", "Pogrešno korisničko ime ili lozinka!")
+
+def signup():
+    global ulogovan_korisnik
+    username = username_entry.get()
+    password = password_entry.get()
+
+    if not username or not password:
+        messagebox.showerror("Greška", "Unesite korisničko ime i lozinku.")
+        return
+
+    if username in korisnici:
+        messagebox.showerror("Greška", "Korisnik već postoji.")
+    else:
+        korisnici[username] = password
+        with open(korisnici_fajl, "w") as f:
+            json.dump(korisnici, f)
+        ulogovan_korisnik = username
+        messagebox.showinfo("Uspeh", "Uspešno registrovani!")
+        prikazi_knjige()
+        username_entry.delete(0, 'end')
+        password_entry.delete(0, 'end')
+
 def pretrazi_knjigu():
-    upit = unos.get().lower()
-    tekst.delete(1.0, END)
+    upit = ctk.CTkInputDialog(title="Pretraga", text="Unesi naziv knjige ili autora:").get_input()
+    if upit:
+        filtrirano = {k: v for k, v in knjige_autori.items() if upit.lower() in k.lower() or upit.lower() in v.lower()}
+        if filtrirano:
+            prikazi_knjige(filtrirano)
+        else:
+            messagebox.showinfo("Rezultat", "Nema rezultata pretrage.")
+
+def pozajmi_knjige_dialog():
+    global ulogovan_korisnik
+    if not ulogovan_korisnik:
+        messagebox.showerror("Greška", "Morate biti prijavljeni da biste pozajmili knjige.")
+        return
+
+    prozor = ctk.CTkToplevel(app)
+    prozor.title("📥 Pozajmi knjige")
+    prozor.geometry("400x500")
+    prozor.transient(app)
+    prozor.grab_set()
+    prozor.focus()
+
+    check_vars = {}
+
+    okvir = ctk.CTkScrollableFrame(prozor)
+    okvir.pack(pady=10, padx=10, fill="both", expand=True)
+
     for naslov, autor in knjige_autori.items():
-        if upit in naslov.lower():
-            status = "Dostupna" if status_knjige[naslov] else "Pozajmljena"
-            tekst.insert(END, f"{naslov} - {autor} ({status})\n")
-
-#pozajmljivanje knjige
-def pozajmi_knjigu():
-    naslov = unos.get()
-    if naslov in knjige_autori:
         if status_knjige[naslov]:
-            status_knjige[naslov] = False
-            tekst.insert(END, f"Knjiga '{naslov}' je uspješno pozajmljena.\n")
-        else:
-            tekst.insert(END, f"Knjiga '{naslov}' je već pozajmljena.\n")
-    else:
-        tekst.insert(END, f"Knjiga '{naslov}' ne postoji u sistemu.\n")
+            var = ctk.BooleanVar()
+            check = ctk.CTkCheckBox(okvir, text=f"{naslov} - {autor}", variable=var)
+            check.pack(anchor="w", pady=2)
+            check_vars[naslov] = var
 
-#vracanje knjige
-def vrati_knjigu():
-    naslov = unos.get()
-    if naslov in knjige_autori:
+    def potvrdi():
+        odabrane = [k for k, v in check_vars.items() if v.get()]
+        if not odabrane:
+            messagebox.showwarning("Upozorenje", "Niste izabrali nijednu knjigu.")
+            return
+        for knjiga in odabrane:
+            status_knjige[knjiga] = False
+        messagebox.showinfo("Uspeh", f"Pozajmljene knjige: {', '.join(odabrane)}")
+        prikazi_knjige()
+        prozor.destroy()
+
+    ctk.CTkButton(prozor, text="📥 Pozajmi odabrane", command=potvrdi).pack(pady=10)
+
+def vrati_knjige_dialog():
+    global ulogovan_korisnik
+    if not ulogovan_korisnik:
+        messagebox.showerror("Greška", "Morate biti prijavljeni da biste vratili knjige.")
+        return
+
+    prozor = ctk.CTkToplevel(app)
+    prozor.title("📤 Vrati knjige")
+    prozor.geometry("400x500")
+    prozor.transient(app)
+    prozor.grab_set()
+    prozor.focus()
+
+    check_vars = {}
+
+    okvir = ctk.CTkScrollableFrame(prozor)
+    okvir.pack(pady=10, padx=10, fill="both", expand=True)
+
+    for naslov, autor in knjige_autori.items():
         if not status_knjige[naslov]:
-            status_knjige[naslov] = True
-            tekst.insert(END, f"Knjiga '{naslov}' je uspješno vraćena.\n")
-        else:
-            tekst.insert(END, f"Knjiga '{naslov}' je već dostupna.\n")
-    else:
-        tekst.insert(END, f"Knjiga '{naslov}' ne postoji u sistemu.\n")
+            var = ctk.BooleanVar()
+            check = ctk.CTkCheckBox(okvir, text=f"{naslov} - {autor}", variable=var)
+            check.pack(anchor="w", pady=2)
+            check_vars[naslov] = var
 
-prozor.mainloop()
+    def potvrdi():
+        odabrane = [k for k, v in check_vars.items() if v.get()]
+        if not odabrane:
+            messagebox.showwarning("Upozorenje", "Niste izabrali nijednu knjigu.")
+            return
+        for knjiga in odabrane:
+            status_knjige[knjiga] = True
+        messagebox.showinfo("Uspeh", f"Vraćene knjige: {', '.join(odabrane)}")
+        prikazi_knjige()
+        prozor.destroy()
+
+    ctk.CTkButton(prozor, text="📤 Vrati odabrane", command=potvrdi).pack(pady=10)
+
+def sortiraj_naslov():
+    sortirano = dict(sorted(knjige_autori.items()))
+    prikazi_knjige(sortirano)
+
+def sortiraj_autor():
+    sortirano = dict(sorted(knjige_autori.items(), key=lambda item: item[1]))
+    prikazi_knjige(sortirano)
+
+def prikazi_statistiku():
+    ukupno = len(knjige_autori)
+    dostupne = sum(1 for dostupna in status_knjige.values() if dostupna)
+    pozajmljene = ukupno - dostupne
+    messagebox.showinfo("📊 Statistika", f"Ukupno knjiga: {ukupno}\nDostupne: {dostupne}\nPozajmljene: {pozajmljene}")
+
+def logout():
+    global ulogovan_korisnik
+    if ulogovan_korisnik:
+        ulogovan_korisnik = None
+        messagebox.showinfo("Odjava", "Uspešno ste se odjavili.")
+    else:
+        messagebox.showinfo("Odjava", "Niste prijavljeni.")
+
+# ------------------- INTERFEJS -------------------
+main_frame = ctk.CTkFrame(app)
+main_frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+# ------- Lijeva kolona (meni) -------
+meni_frame = ctk.CTkFrame(main_frame)
+meni_frame.pack(side="left", fill="y", padx=10, pady=10)
+
+ctk.CTkLabel(meni_frame, text="📖 Meni", font=("Helvetica", 16, "bold")).pack(pady=10)
+ctk.CTkButton(meni_frame, text="Prikaži sve", command=lambda: prikazi_knjige()).pack(pady=5)
+ctk.CTkButton(meni_frame, text="Pretraži", command=pretrazi_knjigu).pack(pady=5)
+ctk.CTkButton(meni_frame, text="📥 Pozajmi", command=pozajmi_knjige_dialog).pack(pady=5)
+ctk.CTkButton(meni_frame, text="📤 Vrati", command=vrati_knjige_dialog).pack(pady=5)
+ctk.CTkButton(meni_frame, text="Sortiraj po naslovu", command=sortiraj_naslov).pack(pady=5)
+ctk.CTkButton(meni_frame, text="Sortiraj po autoru", command=sortiraj_autor).pack(pady=5)
+ctk.CTkButton(meni_frame, text="Statistika", command=prikazi_statistiku).pack(pady=5)
+ctk.CTkButton(meni_frame, text="Logout", fg_color="red", command=logout).pack(pady=15)
+
+# ------- Centralna kolona (prikaz knjiga) -------
+knjige_list_frame = ctk.CTkScrollableFrame(main_frame)
+knjige_list_frame.pack(side="left", fill="both", expand=True, padx=10, pady=10)
+
+# ------- Desna kolona (prijava / registracija) -------
+auth_frame = ctk.CTkFrame(main_frame)
+auth_frame.pack(side="left", fill="y", padx=10, pady=10)
+
+ctk.CTkLabel(auth_frame, text="Korisničko ime").pack()
+username_entry = ctk.CTkEntry(auth_frame, width=100)
+username_entry.pack(pady=5, padx=5)
+
+ctk.CTkLabel(auth_frame, text="Lozinka").pack()
+password_entry = ctk.CTkEntry(auth_frame, width=100, show="*")
+password_entry.pack(pady=5, padx=5)
+
+ctk.CTkButton(auth_frame, text="Prijavi se", command=login).pack(pady=10, padx=5, fill="x")
+ctk.CTkButton(auth_frame, text="Registruj se", command=signup).pack(pady=5, padx=5, fill="x")
+
+prikazi_knjige()
+
+app.mainloop()

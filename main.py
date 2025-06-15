@@ -12,12 +12,19 @@ app.title("📚 Biblioteka")
 
 # ------------------- PODACI -------------------
 korisnici_fajl = "korisnici.json"
+zaduzenja_fajl = "zaduzenja.json"
 
 if os.path.exists(korisnici_fajl):
     with open(korisnici_fajl, "r") as f:
         korisnici = json.load(f)
 else:
     korisnici = {}
+
+if os.path.exists(zaduzenja_fajl):
+    with open(zaduzenja_fajl, "r") as f:
+        zaduzenja = json.load(f)
+else:
+    zaduzenja = {}
 
 knjige_autori = {
     "Ana Karenjina": "Lav Tolstoj",
@@ -137,6 +144,9 @@ def pozajmi_knjige_dialog():
             return
         for knjiga in odabrane:
             status_knjige[knjiga] = False
+        zaduzenja.setdefault(ulogovan_korisnik, []).extend(odabrane)
+        with open(zaduzenja_fajl, "w") as f:
+            json.dump(zaduzenja, f)
         messagebox.showinfo("Uspeh", f"Pozajmljene knjige: {', '.join(odabrane)}")
         prikazi_knjige()
         prozor.destroy()
@@ -175,6 +185,10 @@ def vrati_knjige_dialog():
             return
         for knjiga in odabrane:
             status_knjige[knjiga] = True
+            if knjiga in zaduzenja.get(ulogovan_korisnik, []):
+                zaduzenja[ulogovan_korisnik].remove(knjiga)
+        with open(zaduzenja_fajl, "w") as f:
+            json.dump(zaduzenja, f)
         messagebox.showinfo("Uspeh", f"Vraćene knjige: {', '.join(odabrane)}")
         prikazi_knjige()
         prozor.destroy()
@@ -194,6 +208,17 @@ def prikazi_statistiku():
     dostupne = sum(1 for dostupna in status_knjige.values() if dostupna)
     pozajmljene = ukupno - dostupne
     messagebox.showinfo("📊 Statistika", f"Ukupno knjiga: {ukupno}\nDostupne: {dostupne}\nPozajmljene: {pozajmljene}")
+
+def prikazi_moje_knjige():
+    if not ulogovan_korisnik:
+        messagebox.showerror("Greška", "Morate biti prijavljeni.")
+        return
+    moje = zaduzenja.get(ulogovan_korisnik, [])
+    if not moje:
+        messagebox.showinfo("Info", "Niste zadužili nijednu knjigu.")
+        return
+    filtrirane = {k: knjige_autori[k] for k in moje}
+    prikazi_knjige(filtrirane)
 
 def logout():
     global ulogovan_korisnik
@@ -216,6 +241,7 @@ ctk.CTkButton(meni_frame, text="Prikaži sve", command=lambda: prikazi_knjige())
 ctk.CTkButton(meni_frame, text="Pretraži", command=pretrazi_knjigu).pack(pady=5)
 ctk.CTkButton(meni_frame, text="📥 Pozajmi", command=pozajmi_knjige_dialog).pack(pady=5)
 ctk.CTkButton(meni_frame, text="📤 Vrati", command=vrati_knjige_dialog).pack(pady=5)
+ctk.CTkButton(meni_frame, text="📚 Moje knjige", command=prikazi_moje_knjige).pack(pady=5)
 ctk.CTkButton(meni_frame, text="Sortiraj po naslovu", command=sortiraj_naslov).pack(pady=5)
 ctk.CTkButton(meni_frame, text="Sortiraj po autoru", command=sortiraj_autor).pack(pady=5)
 ctk.CTkButton(meni_frame, text="Statistika", command=prikazi_statistiku).pack(pady=5)
